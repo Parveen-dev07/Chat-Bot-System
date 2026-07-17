@@ -18,6 +18,25 @@ interface Message {
   createdAt: string;
 }
 
+const MessageStatus = ({ status }: { status: string }) => {
+  const color = status === "seen" ? "#7dd3fc" : "rgba(255,255,255,0.7)";
+
+  // double tick for delivered & seen
+  if (status === "delivered" || status === "seen") return (
+    <svg width="18" height="11" viewBox="0 0 18 11" fill="none" title={status}>
+      <polyline points="1,6 4,9 9,3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="5,6 8,9 17,1" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+
+  // single tick for sent
+  return (
+    <svg width="12" height="11" viewBox="0 0 12 11" fill="none" title="sent">
+      <polyline points="1,6 4,9 11,1" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
 const ChatWindow = () => {
   const activeConversation = useSelector(getActiveConversation);
   const messages = useSelector((state: RootState) =>
@@ -38,7 +57,7 @@ const socket = useSocket()
 
   const getConvName = () => {
     if (!activeConversation) return "";
-    if (activeConversation.isGroup) return activeConversation.groupName ?? "Group";
+    if (activeConversation.groupName) return activeConversation.groupName ?? "Group";
     const other = activeConversation.participants?.find((p: any) => p._id !== currentUser?._id);
     return other?.name ?? "Unknown";
   };
@@ -85,9 +104,16 @@ const socket = useSocket()
   if (!activeConversation) return;
 
   socket.emit("join-conversation", activeConversation._id);
+ 
 
   console.log("Joined room:", activeConversation._id);
 }, [activeConversation, socket]);
+useEffect(()=>{
+  if (!activeConversation) return;
+   socket.emit("conversation-opened", {
+        conversationId: activeConversation._id,
+    });
+},[activeConversation])
 
   if (!activeConversation) {
     return (
@@ -116,14 +142,16 @@ const socket = useSocket()
         )}
         {messages?.map((msg) => {
           const isMine = msg.sender._id === currentUser?._id;
-          console.log("show is mine---->",isMine);
-          console.log("show msd---->",msg);
-          
-          
           return (
             <div key={msg._id} style={{ ...s.msgRow, justifyContent: isMine ? "flex-end" : "flex-start" }}>
               <div style={{ ...s.bubble, background: isMine ? "var(--accent)" : "var(--code-bg)", color: isMine ? "#fff" : "var(--text-h)" }}>
-                {msg.text}
+                {!isMine && <span style={s.senderName}>{msg?.sender?.name ?? "N/A"}</span>}
+                <span>{msg.text}</span>
+                {isMine && (
+                  <div style={s.statusRow}>
+                    <MessageStatus status={msg.status} />
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -215,6 +243,19 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     lineHeight: "1.5",
     wordBreak: "break-word",
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+  },
+  senderName: {
+    fontSize: "11px",
+    fontWeight: 600,
+    opacity: 0.7,
+  },
+  statusRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: "2px",
   },
   inputRow: {
     padding: "12px 16px",

@@ -16,15 +16,18 @@ const ChatList = () => {
   // console.log("show user conversation------->",user) 
   const [userOpen, setUsersOpen] = useState(false);
   const [newChat, setNewChat] = useState(false)
-   console.log("show active conversation------->",activeConversation) 
+  const [chatType, setChatType] = useState("");
+  const [newGroup, setNewGroup] = useState(false)
+
+  //  console.log("show active conversation------->",activeConversation) 
   
 
   useEffect(() => {
-    dispatch(getChatList());  
+    dispatch(getChatList(chatType));  
   }, [dispatch]);
 
   const getName = (conv: any) => {
-    if (conv.isGroup) return conv.groupName ?? "Group";
+    if (conv.groupName) return conv.groupName ?? "Group";
     const other = conv.participants?.find((p: any) => p._id !== currentUser?._id);
     return other?.name ?? "Unknown";
   };
@@ -39,8 +42,19 @@ const ChatList = () => {
         > +</button>
         {userOpen && (
           <>
-          <option onClick={()=> setNewChat(true)}>New Chat</option>
-          <option>new Group</option>
+          <option onClick={()=> 
+            
+            {
+              setNewChat(true)
+              setNewGroup(false)
+          }}>New Chat</option>
+          <option onClick={()=> 
+            {
+
+              setNewGroup(true)
+              setNewChat(false)
+            }
+            }>new Group</option>
           </>
         )}
         
@@ -68,8 +82,16 @@ const ChatList = () => {
         })}
       </div>
       <UserList
+      createType="private"
+      
       isOpen={newChat}
       onClose={()=> setNewChat(false)}
+      />
+      <UserList
+      createType="group"
+      
+      isOpen={newGroup}
+      onClose={()=> setNewGroup(false)}
       />
     </div>
   );

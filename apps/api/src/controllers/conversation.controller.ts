@@ -65,7 +65,12 @@ export const CreateGroupConversation = async(req:Request,res:Response)=>{
 export const GetUserConersations = async(req:Request,res:Response)=>{
     try {
         const userId = req.user?.id;
-        const result = await conversationService.getUserConversations(userId!);
+        const {chatType} = req.query
+
+        const result = await conversationService.getUserConversations(
+            userId!,
+           chatType as "private" | "group" | undefined
+        );
         res.status(200).json({
             message:"Fetch conversations successfully",
             success:true,

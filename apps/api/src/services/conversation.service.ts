@@ -62,16 +62,26 @@ export const conversationService = {
 
     return { conversation, isNew: true };
   },
-  async getUserConversations(userId: string) {
-    const result = await Conversation.find({
-      participants: userId
-    }).populate("participants", "-password").populate("lastMessageAt").sort({ createdAt: -1 })
+ 
+  async getUserConversations(
+  userId: string,
+  chatType?: "private" | "group"
+) {
+  const query: any = {
+    participants: userId,
+  };
 
-    if (!result) {
-      throw new Error("Conversation not found")
-    }
-    return result
-  },
+ if (chatType && chatType.trim() !== "") {
+    query.type = chatType;
+  }
+
+  const result = await Conversation.find(query)
+    .populate("participants", "-password")
+    .populate("lastMessageAt")
+    .sort({ updatedAt: -1 });
+
+  return result;
+},
   async getConversationById(conversationId: string) {
     const messages = await Message.find({ conversation: conversationId })
       .populate("sender", "-password")

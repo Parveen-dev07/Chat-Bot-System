@@ -1,9 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
-import { createOrGetConverastion } from "../../apis/chat";
+import { createOrGetConverastion, createGroupConversation } from "../../apis/chat";
 import type { AppDispatch } from "../../app/store";
 import { getChatList, setActiveConversation } from "../../features/chat/chatSlice";
 import { getUsers, getUsersList } from "../../features/auth/authSlice";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getAuthUser } from "../../utils/auth";
 
 interface User {
@@ -12,76 +12,126 @@ interface User {
   email: string;
 }
 
-// const USERS: User[] = [
-//   { _id: "1", name: "Alice Johnson", email: "alice@example.com" },
-//   { _id: "2", name: "Bob Smith", email: "bob@example.com" },
-//   { _id: "3", name: "Carol White", email: "carol@example.com" },
-//   { _id: "4", name: "David Brown", email: "david@example.com" },
-//   { _id: "5", name: "Eva Martinez", email: "eva@example.com" },
-// ];
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelect?: (user: User) => void;
+  createType:'private' | 'group'
 }
 
-const UserList = ({ isOpen, onClose, onSelect }: Props) => {
+const UserList = ({ isOpen, onClose, onSelect, createType = 'private' }: Props) => {
   if (!isOpen) return null;
-const dispatch = useDispatch<AppDispatch>()
-const currentUser = getAuthUser()
 
-const USERS = useSelector(getUsersList)?.filter((u:any)=> u._id !== currentUser?._id)
-console.log("show users---->",USERS);
+  const dispatch = useDispatch<AppDispatch>();
+  const currentUser = getAuthUser();
+  const [chatType] = useState("");
+  const [selected, setSelected] = useState<User[]>([]);
+  const [groupName, setGroupName] = useState("");
 
+  const USERS = useSelector(getUsersList)?.filter((u: any) => u._id !== currentUser?._id);
 
-const fetchUsers = async()=>{
-  dispatch(getUsers({page:1,limit:50}))
-}
-  const createConversation = async(receiverId:string)=>{
+  const fetchUsers = async () => { dispatch(getUsers({ page: 1, limit: 50 })); };
+
+  const createConversation = async (receiverId: string) => {
     try {
-      if(!receiverId){
-        alert("Please provide receiver Id")
+      if (!receiverId) { alert("Please provide receiver Id"); return; }
+      const response = await createOrGetConverastion(receiverId);
+      if (response.success) {
+        dispatch(getChatList(chatType));
+        dispatch(setActiveConversation(response?.result?.conversation));
+        onClose();
       }
-      const response = await createOrGetConverastion(receiverId)
-      console.log("show resposnse---->",response);
-      if(response.success){
-        dispatch(getChatList())
-        dispatch(setActiveConversation(response?.result?.conversation
-))
-  onClose()
-  
-      }
-
-      
-    } catch (error:any) {
-      throw new Error(error?.response.data.message)
+    } catch (error: any) {
+      throw new Error(error?.response.data.message);
     }
-  }
-  useEffect(()=>{fetchUsers()},[dispatch])
+  };
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selected.length === 0) return;
+    try {
+      const response = await createGroupConversation({ groupName: groupName.trim(), participants: selected.map((u) => u._id) });
+      console.log("show response------>",response);
+      
+      if (response.success) {
+        dispatch(getChatList(chatType));
+        dispatch(setActiveConversation(response?.data?.conversation));
+        setSelected([]);
+        setGroupName("");
+        onClose();
+      }
+    } catch (error: any) {
+      throw new Error(error?.response.data.message);
+    }
+  };
+
+  const toggleUser = (user: User) => {
+    setSelected((prev) =>
+      prev.find((u) => u._id === user._id)
+        ? prev.filter((u) => u._id !== user._id)
+        : [...prev, user]
+    );
+  };
+
+  useEffect(() => { fetchUsers(); }, [dispatch]);
 
   return (
     <div style={s.overlay} onClick={onClose}>
       <div style={s.panel} onClick={(e) => e.stopPropagation()}>
+
         <div style={s.header}>
-          <span style={s.title}>New Message</span>
+          <span style={s.title}>{createType === "group" ? "New Group" : "New Message"}</span>
           <button style={s.closeBtn} onClick={onClose}>✕</button>
         </div>
 
+        {createType === "group" && (
+          <div style={s.groupNameWrap}>
+            <input
+              style={s.groupNameInput}
+              placeholder="Group name…"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+          </div>
+        )}
+
         <div style={s.list}>
-          {USERS!.map((user:any) => (
-            <div key={user._id} style={s.item} 
-            // onClick={() => { onSelect?.(user); onClose(); }}
-            onClick={()=> createConversation(user?._id)}
-            >
-              <div style={s.avatar}>{user.name[0].toUpperCase()}</div>
-              <div style={s.info}>
-                <span style={s.name}>{user.name}</span>
-                <span style={s.email}>{user.email}</span>
+          {USERS!.map((user: any) => {
+            const isChecked = !!selected.find((u) => u._id === user._id);
+            return (
+              <div
+                key={user._id}
+                style={{ ...s.item, background: isChecked ? "var(--accent-bg)" : "transparent" }}
+                onClick={() => createType === "private" ? createConversation(user._id) : toggleUser(user)}
+              >
+                <div style={s.avatar}>{user.name[0].toUpperCase()}</div>
+                <div style={s.info}>
+                  <span style={s.name}>{user.name}</span>
+                  <span style={s.email}>{user.email}</span>
+                </div>
+                {createType === "group" && (
+                  <div style={{ ...s.checkbox, background: isChecked ? "var(--accent)" : "transparent", borderColor: isChecked ? "var(--accent)" : "var(--border)" }}>
+                    {isChecked && <span style={s.checkmark}>✓</span>}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {createType === "group" && (
+          <div style={s.footer}>
+            <span style={s.selectedCount}>{selected.length} selected</span>
+            <button
+              style={{ ...s.createBtn, opacity: selected.length === 0 || !groupName.trim() ? 0.5 : 1 }}
+              disabled={selected.length === 0 || !groupName.trim()}
+              onClick={handleCreateGroup}
+            >
+              Create Group
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -129,6 +179,21 @@ const s: Record<string, React.CSSProperties> = {
     padding: "2px 6px",
     borderRadius: "6px",
   },
+  groupNameWrap: {
+    padding: "12px 20px",
+    borderBottom: "1px solid var(--border)",
+  },
+  groupNameInput: {
+    width: "100%",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "1px solid var(--border)",
+    background: "var(--bg)",
+    color: "var(--text-h)",
+    fontSize: "14px",
+    outline: "none",
+    boxSizing: "border-box",
+  },
   list: {
     overflowY: "auto",
     flex: 1,
@@ -159,6 +224,7 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     gap: "2px",
+    flex: 1,
   },
   name: {
     fontSize: "14px",
@@ -168,6 +234,43 @@ const s: Record<string, React.CSSProperties> = {
   email: {
     fontSize: "12px",
     color: "var(--text)",
+  },
+  checkbox: {
+    width: "18px",
+    height: "18px",
+    borderRadius: "50%",
+    border: "2px solid",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    transition: "all 0.15s",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: "11px",
+    lineHeight: 1,
+  },
+  footer: {
+    padding: "12px 20px",
+    borderTop: "1px solid var(--border)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectedCount: {
+    fontSize: "13px",
+    color: "var(--text)",
+  },
+  createBtn: {
+    padding: "8px 16px",
+    borderRadius: "8px",
+    border: "none",
+    background: "var(--accent)",
+    color: "#fff",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
   },
 };
 

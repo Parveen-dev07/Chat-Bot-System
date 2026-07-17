@@ -35,9 +35,9 @@ interface GetMessagesPayload {
 
 export const getChatList = createAsyncThunk(
   "chat/chatlist",
-  async (_, { rejectWithValue }) => {
+  async (chatType:string, { rejectWithValue }) => {
     try {
-      const response = await getConversationList();
+      const response = await getConversationList(chatType);
       return response;
     } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message);
@@ -85,7 +85,38 @@ const chatSlice = createSlice({
   if (!exists) {
     state.messages[conversationId].push(message);
   }
+},
+ updateMessageStatus(state, action) {
+  const { conversationId, messageId, status } = action.payload;
+
+  const messages = state.messages[conversationId];
+
+  if (!messages) return;
+
+  const message = messages.find(
+    (msg: any) => msg._id === messageId
+  );
+
+  if (message) {
+    message.status = status;
+  }
 }
+,updateConversationSeen(state, action) {
+    const { conversationId } = action.payload;
+
+    const messages = state.messages[conversationId];
+
+    if (!messages) return;
+
+    messages.forEach((msg: any) => {
+      
+      if (msg.status !== "seen") {
+        msg.status = "seen";
+      }
+
+     
+    });
+  },
   },
   extraReducers(builder) {
     builder
@@ -128,7 +159,7 @@ const chatSlice = createSlice({
   },
 });
 
-export const { clearChatList, addMessage,setActiveConversation } = chatSlice.actions;
+export const { clearChatList,updateConversationSeen,updateMessageStatus, addMessage,setActiveConversation } = chatSlice.actions;
 
 export default chatSlice.reducer;
 

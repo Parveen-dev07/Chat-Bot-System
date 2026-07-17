@@ -6,8 +6,8 @@ interface GroupProps {
     participants:string[]
 }
 
-export const getConversationList = async()=>{
-    const response = await api.get(`/conversation/get-converastion-list`);
+export const getConversationList = async(chatType:string)=>{
+    const response = await api.get(`/conversation/get-converastion-list?chatType=${chatType}`);
     return response.data
 }
 
