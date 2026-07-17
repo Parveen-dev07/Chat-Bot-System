@@ -24,7 +24,7 @@ const SocketProvider = ({ children }: Props) => {
 
             dispatch(addMessage(message))
             socket.emit("message-delivered", {
-                conversationId: message.conversation,
+                conversationId: message.conversation,  
                 messageId: message._id,
             });
            if (activeConversation?._id === message.conversation) {
