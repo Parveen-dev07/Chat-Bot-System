@@ -12,6 +12,7 @@ export const initSocket = (server: HttpServer) => {
     io = new Server(server, {
         cors: {
             origin: "*",
+             methods: ["GET", "POST"],
         },
     });
     io.use(socketAuth)

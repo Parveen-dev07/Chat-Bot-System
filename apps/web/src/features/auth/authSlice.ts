@@ -1,8 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { GetUsers, UserLogin } from "../../apis/auth";
-import { getToken, removeToken, setAuthUser, setToken } from "../../utils/auth";
+import { getToken, removeAuth, removeToken, setAuthUser, setToken } from "../../utils/auth";
 import type { RootState } from "../../app/store";
 import { socket } from "../../socket/socket";
+import { useNavigate } from "react-router-dom";
 
 interface AuthState {
   user: any;
@@ -67,6 +68,8 @@ const authSlice = createSlice({
       socket.disconnect()
 
       removeToken();
+      removeAuth();
+      
     },
   },
 

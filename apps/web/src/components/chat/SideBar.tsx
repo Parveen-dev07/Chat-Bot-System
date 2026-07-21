@@ -1,11 +1,13 @@
 import { useDispatch, useSelector } from "react-redux";
 import { logout, getUser } from "../../features/auth/authSlice";
 import type { AppDispatch } from "../../app/store";
+import { useNavigate } from "react-router-dom";
 
 const SideBar = () => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(getUser);
   console.log("sho wuss form sidebar 0list --->",user);
+  const navigate = useNavigate()
   
   
 
@@ -21,7 +23,15 @@ const SideBar = () => {
           <span style={s.userName}>{user?.name ?? "User"}</span>
           <span style={s.userEmail}>{user?.email ?? ""}</span>
         </div>
-        <button style={s.logoutBtn} onClick={() => dispatch(logout())} title="Logout">
+        <button style={s.logoutBtn} onClick={() => 
+        {
+           
+          dispatch(logout())
+          navigate("/login", {replace:true})
+          
+        }
+
+          } title="Logout">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
