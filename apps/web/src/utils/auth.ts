@@ -21,7 +21,3 @@ export const getAuthUser = () => {
 
   return user ? JSON.parse(user) : null;
 };
-
-export const removeAuth = ()=>{
-  localStorage.removeItem(USER_KEY)
-}

@@ -6,7 +6,6 @@ interface Conversation {
   _id: string;
   isGroup: boolean;
   groupName?: string;
-  type?:string;
   participants: { _id: string; name: string; email: string }[];
   lastMessage?: { content: string; createdAt: string };
 }

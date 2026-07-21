@@ -12,7 +12,7 @@ interface Props {
 
 const SocketProvider = ({ children }: Props) => {
     const dispatch = useDispatch<AppDispatch>()
-     const activeConversation = useSelector(getActiveConversation); 
+     const activeConversation = useSelector(getActiveConversation);
     useEffect(() => {
         socket.connect()
         socket.on("connect", () => {
@@ -24,16 +24,23 @@ const SocketProvider = ({ children }: Props) => {
 
             dispatch(addMessage(message))
             socket.emit("message-delivered", {
-                conversationId: message.conversation,
+                conversationId: message.conversation,  
                 messageId: message._id,
             });
-          if (activeConversation?._id === message.conversation) {
+           if (activeConversation?._id === message.conversation) {
     socket.emit("message-seen", {
       messageId: message._id,
-    }); 
+    });
   }
             
-        
+            
+    //         if (activeConversation?._id === message.conversation) {
+    //             console.log("show condtion trueTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT----->");
+                
+    //     socket.emit("conversation-opened", {
+    //         conversationId: message.conversation,
+    //     });
+    // }
            
                      
         })

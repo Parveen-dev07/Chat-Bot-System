@@ -1,20 +1,35 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getActiveConversation, GetMessage, Messages } from "../../features/chat/chatSlice";
+import { getUser } from "../../features/auth/authSlice";
 import type { AppDispatch, RootState } from "../../app/store";
 import { getConversationMessages } from "../../utils/getConversationMessage";
 import { useSocket } from "../../socket/useSocket";
 import { getAuthUser } from "../../utils/auth";
-import { formatMessageTime, groupMessagesByDate } from "../../utils/chatUtils";
+
+
+
+
+
+interface Message {
+  _id: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
 
 const MessageStatus = ({ status }: { status: string }) => {
   const color = status === "seen" ? "#7dd3fc" : "rgba(255,255,255,0.7)";
+
+  // double tick for delivered & seen
   if (status === "delivered" || status === "seen") return (
     <svg width="18" height="11" viewBox="0 0 18 11" fill="none" title={status}>
       <polyline points="1,6 4,9 9,3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <polyline points="5,6 8,9 17,1" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+
+  // single tick for sent
   return (
     <svg width="12" height="11" viewBox="0 0 12 11" fill="none" title="sent">
       <polyline points="1,6 4,9 11,1" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -25,22 +40,24 @@ const MessageStatus = ({ status }: { status: string }) => {
 const ChatWindow = () => {
   const activeConversation = useSelector(getActiveConversation);
   const messages = useSelector((state: RootState) =>
-    getConversationMessages(state, activeConversation?._id ?? "")
-  );
-  const socket = useSocket();
+  getConversationMessages(
+    state,
+    activeConversation?._id ?? ""
+  )
+);
+const socket = useSocket()
   const currentUser = getAuthUser();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>()
+  // const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [page] = useState(1);
-  const [limit] = useState(20);
-  const [showMembers, setShowMembers] = useState(false);
-
-  // handles both isGroup boolean and type === "group" string from API
-  const isGroup = !!(activeConversation?.isGroup || activeConversation?.type === "group");
+  const [page, setPage] = useState(1);
+  const [limit,setLimit] = useState(20)
+  console.log("show active from chat window---->",activeConversation);
+  
 
   const getConvName = () => {
     if (!activeConversation) return "";
-    if (isGroup) return activeConversation.groupName ?? "Group";
+    if (activeConversation.groupName) return activeConversation.groupName ?? "Group";
     const other = activeConversation.participants?.find((p: any) => p._id !== currentUser?._id);
     return other?.name ?? "Unknown";
   };
@@ -48,11 +65,15 @@ const ChatWindow = () => {
   const handleSend = () => {
     const text = input.trim();
     if (!text || !activeConversation) return;
-    socket.emit("send-message", {
-      conversation: activeConversation._id,
+  
+    console.log("handle send work--->");
+    
+    socket.emit("send-message",{
+      conversation:activeConversation?._id,
       text: input,
-      type: "text",
-    });
+    type: "text"
+    })
+    
     setInput("");
   };
 
@@ -63,20 +84,36 @@ const ChatWindow = () => {
     }
   };
 
-  useEffect(() => {
-    if (!activeConversation) return;
-    dispatch(GetMessage({ conversationId: activeConversation._id as any, page, limit }));
-  }, [activeConversation, page, limit, dispatch]);
+  const getMessageData = async()=>{
+    if(!activeConversation) return
 
-  useEffect(() => {
-    if (!activeConversation) return;
-    socket.emit("join-conversation", activeConversation._id);
-  }, [activeConversation, socket]);
+      dispatch(GetMessage({
+        conversationId:activeConversation?._id as any,
+        page,
+        limit
+      }))
+    
+  }
 
-  useEffect(() => {
-    if (!activeConversation) return;
-    socket.emit("conversation-opened", { conversationId: activeConversation._id });
-  }, [activeConversation]);
+  useEffect(()=>{
+    if(!activeConversation) return
+    getMessageData()
+  },[activeConversation,page,limit,dispatch])
+
+   useEffect(() => {
+  if (!activeConversation) return;
+
+  socket.emit("join-conversation", activeConversation._id);
+ 
+
+  console.log("Joined room:", activeConversation._id);
+}, [activeConversation, socket]);
+useEffect(()=>{
+  if (!activeConversation) return;
+   socket.emit("conversation-opened", {
+        conversationId: activeConversation._id,
+    });
+},[activeConversation])
 
   if (!activeConversation) {
     return (
@@ -86,69 +123,40 @@ const ChatWindow = () => {
       </div>
     );
   }
+  
+   
+
 
   return (
     <div style={s.container}>
-
       {/* Header */}
-      <div
-        style={{ ...s.header, cursor: isGroup ? "pointer" : "default" }}
-        onClick={() => isGroup && setShowMembers((p) => !p)}
-      >
+      <div style={s.header}>
         <div style={s.headerAvatar}>{getConvName()[0]?.toUpperCase()}</div>
-        <div style={s.headerInfo}>
-          <span style={s.headerName}>{getConvName()}</span>
-          {isGroup && (
-            <span style={s.headerSub}>
-              {activeConversation.participants?.length ?? 0} members · tap to view
-            </span>
-          )}
-        </div>
+        <span style={s.headerName}>{getConvName()}</span>
       </div>
-
-      {/* Group members panel */}
-      {isGroup && showMembers && (
-        <div style={s.membersPanel}>
-          {activeConversation.participants?.map((p: any) => (
-            <div key={p._id} style={s.memberRow}>
-              <div style={s.memberAvatar}>{p.name?.[0]?.toUpperCase()}</div>
-              <div style={s.memberInfo}>
-                <span style={s.memberName}>{p.name}</span>
-                <span style={s.memberEmail}>{p.email}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Messages */}
       <div style={s.messages}>
         {messages?.length === 0 && (
-          <p style={s.hint}>No messages yet. Say hello! 👋</p>
+          <p style={s.hint}>No messages yet. Say hello! 👋</p>   
         )}
-        {groupMessagesByDate(messages ?? []).map(({ label, messages: group }) => (
-          <div key={label}>
-            <div style={s.dateHeader}>
-              <span style={s.dateLabel}>{label}</span>
-            </div>
-            {group.map((msg) => {
-              const isMine = msg.sender._id === currentUser?._id;
-              return (
-                <div key={msg._id} style={{ ...s.msgRow, justifyContent: isMine ? "flex-end" : "flex-start" }}>
-                  <div style={{ ...s.bubble, background: isMine ? "var(--accent)" : "var(--code-bg)", color: isMine ? "#fff" : "var(--text-h)" }}>
-                    {!isMine && <span style={s.senderName}>{msg?.sender?.name ?? "N/A"}</span>}
-                    <span>{msg.text}</span>
-                    <div style={s.statusRow}>
-                      <span style={s.msgTime}>{formatMessageTime(msg.createdAt)}</span>
-                      {isMine && <MessageStatus status={msg.status} />}
-                    </div>
+        {messages?.map((msg) => {
+          const isMine = msg.sender._id === currentUser?._id;
+          return (
+            <div key={msg._id} style={{ ...s.msgRow, justifyContent: isMine ? "flex-end" : "flex-start" }}>
+              <div style={{ ...s.bubble, background: isMine ? "var(--accent)" : "var(--code-bg)", color: isMine ? "#fff" : "var(--text-h)" }}>
+                {!isMine && <span style={s.senderName}>{msg?.sender?.name ?? "N/A"}</span>}
+                <span>{msg.text}</span>
+                {isMine && (
+                  <div style={s.statusRow}>
+                    <MessageStatus status={msg.status} />
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div> 
 
       {/* Input */}
       <div style={s.inputRow}>
@@ -166,7 +174,6 @@ const ChatWindow = () => {
           </svg>
         </button>
       </div>
-
     </div>
   );
 };
@@ -207,60 +214,10 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: "13px",
     flexShrink: 0,
   },
-  headerInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-  },
   headerName: {
     fontSize: "15px",
     fontWeight: 600,
     color: "var(--text-h)",
-  },
-  headerSub: {
-    fontSize: "11px",
-    color: "var(--text)",
-  },
-  membersPanel: {
-    borderBottom: "1px solid var(--border)",
-    background: "var(--code-bg)",
-    maxHeight: "220px",
-    overflowY: "auto",
-  },
-  memberRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 20px",
-    borderBottom: "1px solid var(--border)",
-  },
-  memberAvatar: {
-    width: "30px",
-    height: "30px",
-    borderRadius: "50%",
-    background: "var(--accent-bg)",
-    border: "1px solid var(--accent-border)",
-    color: "var(--accent)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: 600,
-    fontSize: "12px",
-    flexShrink: 0,
-  },
-  memberInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1px",
-  },
-  memberName: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "var(--text-h)",
-  },
-  memberEmail: {
-    fontSize: "11px",
-    color: "var(--text)",
   },
   messages: {
     flex: 1,
@@ -298,28 +255,7 @@ const s: Record<string, React.CSSProperties> = {
   statusRow: {
     display: "flex",
     justifyContent: "flex-end",
-    alignItems: "center",
-    gap: "4px",
-    marginTop: "3px",
-  },
-  msgTime: {
-    fontSize: "10px",
-    opacity: 0.6,
-    lineHeight: 1,
-  },
-  dateHeader: {
-    display: "flex",
-    justifyContent: "center",
-    margin: "12px 0 6px",
-  },
-  dateLabel: {
-    fontSize: "11px",
-    fontWeight: 500,
-    color: "var(--text)",
-    background: "var(--code-bg)",
-    padding: "3px 10px",
-    borderRadius: "20px",
-    border: "1px solid var(--border)",
+    marginTop: "2px",
   },
   inputRow: {
     padding: "12px 16px",
