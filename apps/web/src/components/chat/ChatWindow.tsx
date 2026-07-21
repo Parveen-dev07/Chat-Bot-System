@@ -164,7 +164,7 @@ const ChatWindow = () => {
       </div>
 
       {/* Group members panel */}
-      {isGroup && showMembers && (
+      {isGroup && showMembers && (    
         <div className="cw-members-panel">
           {activeConversation.participants?.map((p: any) => (
             <div key={p._id} className="cw-member-row">
@@ -222,7 +222,7 @@ const ChatWindow = () => {
 
       {/* Input row */}
       <div className="cw-input-row">
-        <input ref={fileInputRef} type="file" accept="image/*,video/*,audio/*,application/pdf" style={{ display: "none" }} onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" style={{ display: "none" }} onChange={handleFileChange} />
         <button className="cw-attach-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.48" />
