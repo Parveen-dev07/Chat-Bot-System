@@ -32,3 +32,13 @@ try {
 }
 }
 
+export const addGroupMembersInComminity = async(chatId:string)=>{
+try {    
+ return {
+    member:{data:"add members in the comminity successfully"}
+ }
+} catch (error:any) {
+    throw new Error("failed to add member in the group")
+}
+}
+
