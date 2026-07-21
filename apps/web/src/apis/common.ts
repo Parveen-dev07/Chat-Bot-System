@@ -22,4 +22,13 @@ export const getMembersList = async()=>{
         throw new Error(error?.response?.data?.message || "failed to get members list")
     }
 }
+export const addGroupMembers = async(chatId:string)=>{
+try {
+ return {
+    member:{data:"add members successfully"}
+ }
+} catch (error:any) {
+    throw new Error("failed to add member in the group")
+}
+}
 
