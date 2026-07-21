@@ -25,9 +25,6 @@ export const RegisterSockets = (socket: Socket) => {
 
 
 
-
-
-
         } catch (error) {
             socket.emit("error-message", {
                 success: false,

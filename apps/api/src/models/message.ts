@@ -52,7 +52,7 @@ const MessageSchema = new Schema<IMessage>(
 
     type: {
       type: String,
-      enum: ["text", "image", "video", "audio", "file"],
+      // enum: ["text", "image", "video", "audio", "application/pdf"],
       default: "text",
     },
 

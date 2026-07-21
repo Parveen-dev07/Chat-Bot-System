@@ -66,6 +66,10 @@ const SocketProvider = ({ children }: Props) => {
         socket.on("disconnect", () => {
             console.log("Disconnected");
         });
+        socket.on("error-message",(error)=>{
+console.log("show error sockjet ---->",error);
+
+        })
         return () => {
             socket.off("connect");
             socket.off("disconnect");

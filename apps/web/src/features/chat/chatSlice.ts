@@ -5,6 +5,7 @@ import type { RootState } from "../../app/store";
 interface Conversation {
   _id: string;
   isGroup: boolean;
+  type?: string;
   groupName?: string;
   participants: { _id: string; name: string; email: string }[];
   lastMessage?: { content: string; createdAt: string };

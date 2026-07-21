@@ -34,6 +34,8 @@ export const MessageService = {
     if (!conversation) {
       throw new Error("Conversation not found");
     }
+    console.log("show payload---->",payload);
+    
 
     
     const message = await Message.create({
