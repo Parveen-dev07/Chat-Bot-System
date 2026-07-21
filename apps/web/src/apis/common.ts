@@ -23,7 +23,7 @@ export const getMembersList = async()=>{
     }
 }
 export const addGroupMembers = async(chatId:string)=>{
-try {
+try {    
  return {
     member:{data:"add members successfully"}
  }
