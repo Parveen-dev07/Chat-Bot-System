@@ -32,7 +32,7 @@ try {
 }
 }
 
-export const addGroupMembersInComminity = async(chatId:string)=>{
+export const addGroupMembersInComminity = async(conversationId:string)=>{
 try {    
  return {
     member:{data:"add members in the comminity successfully"}
