@@ -7,4 +7,4 @@ const testDocker = async()=>{
 }
 
 
-// const testMessage:string = 123 
+const testMessage:number = 123 
