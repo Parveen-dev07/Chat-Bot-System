@@ -3,8 +3,9 @@ import dotenv from "dotenv";
 import { ConnectDb } from "./config/db.js";
 import { initSocket } from "./sockets/socket.js";
 import http from "http"
-dotenv.config();
+// dotenv.config();
 const server = http.createServer(app)
+
 
 
 console.log("ENV TEST");
