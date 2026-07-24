@@ -1,54 +1,153 @@
-name: chat-app CI
+name: chat-app CI/CD
 
 on:
-    push:
-        branches:
-        - main
-        - Chat-system
-        - test-dev
+  push:
+    branches:
+      # - main 
+      - Chat-system
+      # - test-dev
 
-    pull_request:
-        branches:
-         - main
-         - Chat-system
-         - test-dev    
+  pull_request:
+    branches:
+      - main
+    
+
+
+# Permissions required for GitHub OIDC authentication
+permissions:
+  id-token: write
+  contents: read
+
+
+# Global environment variables
+env:
+  AWS_REGION: eu-north-1
+  API_ECR_REPOSITORY: chat-api
+  WEB_ECR_REPOSITORY: chat-web
 
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build-and-push:
 
-        steps:
-            - name: Checkout respository
-              uses: actions/checkout@v4
+    runs-on: ubuntu-latest
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                node-version: 22
-               
+    steps:
 
-            - name: Setup npm
-              run: npm install -g npm@11.6.2
+      # 1. Checkout GitHub repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Check versions
-              run: |
-                 node -v
-                 npm -v
-            - name: Install dependencies
-              run: npm ci
-             
-            - name: Build backend
-              run: npm run build --workspace=api
 
-            - name: Build frontend
-              run: npm run build --workspace=web
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-            - name: Build backend Docker image
-              run: docker build -f docker/api.Dockerfile -t chat-api:ci .
 
-            - name: Build frontend Docker image
-              run: docker build -f docker/web.Dockerfile -t chat-web:ci .
+      # 3. Install npm 11.6.2
+      - name: Setup npm
+        run: npm install -g npm@11.6.2
 
-             
 
+      # 4. Check Node and npm versions
+      - name: Check versions
+        run: |
+          node -v
+          npm -v
+
+
+      # 5. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+
+      # 6. Build backend
+      - name: Build backend
+        run: npm run build --workspace=api
+
+
+      # 7. Build frontend
+      - name: Build frontend
+        run: npm run build --workspace=web
+
+
+      # 8. Build backend Docker image
+      - name: Build backend Docker image
+        run: |
+          docker build \
+            -f docker/api.Dockerfile \
+            -t chat-api:ci .
+
+
+      # 9. Build frontend Docker image
+      - name: Build frontend Docker image
+        run: |
+          docker build \
+            -f docker/web.Dockerfile \
+            -t chat-web:ci .
+
+
+      # 10. Authenticate GitHub Actions with AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+
+      # 11. Login Docker to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+
+      # 12. Create API ECR repository if it does not exist
+      - name: Create API ECR repository
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.API_ECR_REPOSITORY }} \
+            --region ${{ env.AWS_REGION }} \
+          || aws ecr create-repository \
+            --repository-name ${{ env.API_ECR_REPOSITORY }} \
+            --region ${{ env.AWS_REGION }}
+
+
+
+      # 13. Create Web ECR repository if it does not exist
+      - name: Create Web ECR repository
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.WEB_ECR_REPOSITORY }} \
+            --region ${{ env.AWS_REGION }} \
+          || aws ecr create-repository \
+            --repository-name ${{ env.WEB_ECR_REPOSITORY }} \
+            --region ${{ env.AWS_REGION }}
+
+
+      # 14. Tag backend Docker image
+      - name: Tag backend Docker image
+        run: |
+          docker tag chat-api:ci \
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.API_ECR_REPOSITORY }}:${{ github.sha }}
+
+
+      # 15. Tag frontend Docker image
+      - name: Tag frontend Docker image
+        run: |
+          docker tag chat-web:ci \
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}
+
+
+      # 16. Push backend image to ECR
+      - name: Push backend image to ECR
+        run: |
+          docker push \
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.API_ECR_REPOSITORY }}:${{ github.sha }}
+
+
+      # 17. Push frontend image to ECR
+      - name: Push frontend image to ECR
+        run: |
+          docker push \
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}
