@@ -12,7 +12,8 @@ COPY packages/types/package.json ./packages/types/package.json
 
 RUN npm ci
 
-COPY apps/api ./apps/api
+# COPY apps/api ./apps/api
+COPY apps/api-not-found ./apps/api
 
 COPY packages/types ./packages/types
 
