@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { UploadService } from "../services/upload.service.js"
+import { UploadService } from "../services/upload.service.js" 
 
 export const uploadMedia = async(req:Request,res:Response)=>{
     try {
