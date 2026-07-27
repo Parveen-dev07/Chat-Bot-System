@@ -24,6 +24,14 @@ env:
   AWS_REGION: eu-north-1
   API_ECR_REPOSITORY: chat-api
   WEB_ECR_REPOSITORY: chat-web
+  
+  ECS_CLUSTER: Chat-app-cluster
+  ECS_API_SERVICE: chat-app-backend-tasl-defination-service-eom4qup5
+  ECS_API_TASK_DEFINITION: chat-app-backend-tasl-defination
+  ECS_API_CONTAINER: Chat-api1
+
+
+
 
 
 jobs:
@@ -151,3 +159,30 @@ jobs:
         run: |
           docker push \
           ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}
+
+      # 18 download current ECS task definition
+      - name: Download ECS task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_API_TASK_DEFINITION }} \
+            --query taskDefinition \
+            --output json > task-definition.json
+
+             # 19. Update ECS task definition with new Docker image
+      - name: Update ECS task definition to ECS
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.ECS_API_CONTAINER }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.API_ECR_REPOSITORY }}:${{ github.sha }}
+
+
+      # 20. Deploy new task definition to ECS
+      - name: Deploy API to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_API_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
