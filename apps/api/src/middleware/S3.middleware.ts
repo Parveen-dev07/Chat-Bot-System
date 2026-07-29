@@ -7,7 +7,8 @@ export const UploadService = {
       throw new Error("File is required");
     }
 
-    const fileName = `${Date.now()}-${file.originalname}`;
+    try {
+        const fileName = `${Date.now()}-${file.originalname}`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
@@ -23,5 +24,9 @@ export const UploadService = {
       contentType: file.mimetype,
       size: file.size,
     };
+    } catch (error:any) {
+        throw new Error(error)  
+    }
+    
   },
 };

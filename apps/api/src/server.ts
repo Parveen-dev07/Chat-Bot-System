@@ -19,7 +19,7 @@ const startServer = async () => {
   await ConnectDb();
 
   initSocket(server);
-
+  
   server.listen(PORT, () => {
     console.log(` Server running at http://localhost:${PORT}`);
   });
