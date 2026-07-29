@@ -91,9 +91,11 @@ jobs:
       # 9. Build frontend Docker image
       - name: Build frontend Docker image
         run: |
-          docker build \
-            -f docker/web.Dockerfile \
-            -t chat-web:ci .
+         docker build \
+         -f docker/web.Dockerfile \
+         --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+         --build-arg VITE_SOCKET_URL="${{ secrets.VITE_SOCKET_URL }}" \
+         -t chat-web:ci .
 
 
       # 10. Authenticate GitHub Actions with AWS

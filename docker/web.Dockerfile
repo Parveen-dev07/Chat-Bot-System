@@ -15,6 +15,9 @@ COPY packages/types ./packages/types
 
 WORKDIR /app/apps/web
 
+RUN echo "VITE_API_URL=http://chat-api-alb-1851760644.eu-north-1.elb.amazonaws.com/api" > .env && \
+    echo "VITE_SOCKET_URL=http://chat-api-alb-1851760644.eu-north-1.elb.amazonaws.com" >> .env
+
 RUN npm run build
 
 EXPOSE 5173
