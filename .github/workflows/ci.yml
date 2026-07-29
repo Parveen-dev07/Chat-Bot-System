@@ -161,6 +161,23 @@ jobs:
           ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}
 
       # 18 download current ECS task definition
+
+                # 18. Deploy latest frontend Docker image to EC2
+      - name: Deploy frontend to EC2
+        run: |
+          aws ssm send-command \
+            --instance-ids i-02029ec014a2ca1a5 \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy latest chat-web frontend" \
+            --parameters 'commands=[
+              "sudo docker stop chat-web || true",
+              "sudo docker rm chat-web || true",
+              "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
+              "sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}",
+              "sudo docker run -d --name chat-web -p 8080:5173 ${{ steps.login-ecr.outputs.registry }}/${{ env.WEB_ECR_REPOSITORY }}:${{ github.sha }}"
+            ]' \
+            --region ${{ env.AWS_REGION }}
+
       - name: Download ECS task definition
         run: |
           aws ecs describe-task-definition \
@@ -186,3 +203,5 @@ jobs:
           service: ${{ env.ECS_API_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+
