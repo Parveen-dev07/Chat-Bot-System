@@ -12,6 +12,8 @@ app.use("/uploads", express.static("uploads"));
 app.get("/",(req,res)=>{
     res.send('route work successfullu')
 })
+console.log("show bucketname from app file---->",process.env.S3_BUCKET_NAME);
+
 app.use("/api",UploadRoutes)
 app.use("/api/user",userRoutes);
 app.use("/api/conversation",conversationRoutes);

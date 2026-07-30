@@ -4,6 +4,7 @@ import { s3 } from "../config/S3..js";
 
 
 export const getS3Url = async(key:string)=>{
+console.log("show bucket name---->",process.env.S3_BUCKET_NAME);
 
     const command = new GetObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
