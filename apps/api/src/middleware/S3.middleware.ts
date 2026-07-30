@@ -9,7 +9,7 @@ export const UploadService = {
 
     try {
         const fileName = `${Date.now()}-${file.originalname}`;
-console.log("show bucket name from middleware---->",process.env.S3_BUCKET_NAME);
+ console.log("show bucket name from middleware---->",process.env.S3_BUCKET_NAME);
 
     const command = new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
