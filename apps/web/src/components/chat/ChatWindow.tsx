@@ -75,8 +75,10 @@ const ChatWindow = () => {
 
       mediaUrl =
         res?.data?.data?.secure_url ||
-        res?.data?.data?.url ||
+        res?.data?.data?.fileName ||
         "";
+        console.log("show media response--->",res);
+        
 
       if (!mediaUrl) {
         throw new Error("File URL not found");
@@ -189,7 +191,7 @@ const ChatWindow = () => {
               <span className="cw-date-label">{label}</span>
             </div>
             {group.map((msg) => {
-              const isMine = msg.sender._id === currentUser?._id;
+              const isMine = msg.sender._id === currentUser?._id; 
               return (
                 <div key={msg._id} className="cw-msg-row" style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
                   <div className={`cw-bubble ${isMine ? "cw-bubble-mine" : "cw-bubble-other"}`}>

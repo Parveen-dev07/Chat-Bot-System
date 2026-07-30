@@ -1,5 +1,6 @@
 import { Conversation } from "../models/conversation.js";
 import { Message } from "../models/message.js";
+import { getS3Url } from "../utils/getS3Url.js";
 
 interface SendMessagePayload {
   conversation: string;
@@ -46,22 +47,36 @@ export const MessageService = {
       mediaUrl: payload.mediaUrl,
       replyTo: payload.replyTo,
     });
+console.log("show mesasge for check aws s3",message);
 
    
     conversation.lastMessageBy = message._id;
     conversation.lastMessageAt = new Date();
 
     await conversation.save();
+    const newMessage = await Message.findById(message._id)
+  .populate("sender", "name avatar")
+  .populate({
+    path: "replyTo",
+    populate: {
+      path: "sender",
+      select: "name avatar",
+    },
+  });
+  if(newMessage?.mediaUrl){
+    newMessage.mediaUrl = await getS3Url(newMessage?.mediaUrl)
+  }
 
-    return await Message.findById(message._id)
-      .populate("sender", "name avatar")
-      .populate({
-        path: "replyTo",
-        populate: {
-          path: "sender",
-          select: "name avatar",
-        },
-      });
+    // return await Message.findById(message._id)
+    //   .populate("sender", "name avatar")
+    //   .populate({
+    //     path: "replyTo",
+    //     populate: {
+    //       path: "sender",
+    //       select: "name avatar",
+    //     },
+    //   });
+    return newMessage
   },
 
   async getMessage(
@@ -106,11 +121,25 @@ export const MessageService = {
     conversation: conversationId,
   });
 
-  
+
   messages.reverse();
+  const updatedMessages = await Promise.all(
+  messages.map(async (message) => {
+
+    if (message.mediaUrl) {
+
+      message.mediaUrl = await getS3Url(
+        message.mediaUrl
+      );
+
+    }
+
+    return message;
+  })
+);
 
   return {
-    messages,
+    messages:updatedMessages,
     pagination: {
       page,
       limit,
