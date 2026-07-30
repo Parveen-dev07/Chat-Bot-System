@@ -185,7 +185,7 @@ const ChatWindow = () => {
         {messages?.length === 0 && (
           <p className="cw-hint">No messages yet. Say hello! 👋</p>
         )}
-        {groupMessagesByDate(messages ?? []).map(({ label, messages: group }) => (
+        {groupMessagesByDate(messages ?? []).map(({ label, messages: group }) => (  
           <div key={label}>
             <div className="cw-date-header">
               <span className="cw-date-label">{label}</span>
