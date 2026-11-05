@@ -4,14 +4,14 @@ on:
     push:
         branches:
         - main
-        - Chat-system
-        - test-dev
+        # - Chat-system
+        # - test-dev
 
-    pull_request:
-        branches:
-         - main
-         - Chat-system
-         - test-dev    
+    # pull_request:
+    #     branches:
+    #      - main
+    #      - Chat-system
+    #      - test-dev    
 
 
 jobs:
