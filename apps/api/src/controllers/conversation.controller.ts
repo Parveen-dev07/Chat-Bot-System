@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import { conversationService } from "../services/conversation.service.js";
+import { Conversation } from "../models/conversation.js";
 import { getIO } from "../sockets/socket.js";
 import type { Server } from "socket.io";
-import type { HydratedDocument } from "mongoose";
+
+type ConversationDoc = NonNullable<Awaited<ReturnType<typeof Conversation.findOne>>>;
 
 const pushConversationToParticipants = async (
     io: Server,
-    conversation: HydratedDocument<{ _id: { toString(): string }; participants: { toString(): string }[] }>
+    conversation: ConversationDoc
 ) => {
     await conversation.populate("participants", "-password");
     const payload = conversation.toObject();

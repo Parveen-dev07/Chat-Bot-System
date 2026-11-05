@@ -42,7 +42,7 @@ export const conversationService = {
       participants: [...new Set([userId, receiverId])],
       createdBy: userId,
     });
-    return conversation;
+    return { conversation, isNew: true };
   },
   async createGroupConversation(
     userId: string,
