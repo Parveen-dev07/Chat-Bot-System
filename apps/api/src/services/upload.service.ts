@@ -6,7 +6,7 @@ export const UploadService = {
         }
 
         return {
-            url: `http://localhost:5000/uploads/${file.filename}`,
+            url: `${process.env.UPLOADS_URL || "http://localhost:5000/uploads"}/${file.filename}`,
         };
     },
 };

@@ -21,7 +21,8 @@ export const RegisterSockets = (socket: Socket) => {
             const message = await MessageService.sendMessage(senderId, payload);
             console.log("show message from db-->", message);
 
-            io.to(payload.conversation).emit('receive-message', message);
+            const roomId = String(payload.conversation);
+            io.to(roomId).emit("receive-message", message);
 
 
 
@@ -36,6 +37,12 @@ export const RegisterSockets = (socket: Socket) => {
     socket.on("message-delivered", async ({ messageId }) => {
         try {
             const io = getIO();
+            const readerId = socket.data.userId as string;
+
+            const existing = await Message.findById(messageId);
+            if (!existing) return;
+            if (existing.sender.toString() === readerId) return;
+            if (existing.status === "seen") return;
 
             const message = await Message.findByIdAndUpdate(
                 messageId,
@@ -63,13 +70,24 @@ export const RegisterSockets = (socket: Socket) => {
     socket.on("message-seen", async({ messageId }) => {
   try {
     const io = getIO();
-    const message = await Message.findByIdAndUpdate(messageId,{
-        status:"seen"
-    },{new:true});
+    const readerId = socket.data.userId as string;
+
+    const existing = await Message.findById(messageId);
+    if (!existing) return;
+    if (existing.sender.toString() === readerId) return;
+
+    const message = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            status: "seen",
+            $addToSet: { seenBy: readerId },
+        },
+        { new: true }
+    );
     if(!message) return;
     io.to(message.conversation.toString()).emit("message-seen",{
         conversationId:message.conversation.toString(),
-        messageId:message?._id.toString(),
+        messageId:message._id.toString(),
         status:message.status
     })
   } catch (error) {

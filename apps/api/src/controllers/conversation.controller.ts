@@ -1,11 +1,35 @@
 import { Request, Response } from "express";
 import { conversationService } from "../services/conversation.service.js";
+import { getIO } from "../sockets/socket.js";
+import type { Server } from "socket.io";
+import type { HydratedDocument } from "mongoose";
+
+const pushConversationToParticipants = async (
+    io: Server,
+    conversation: HydratedDocument<{ _id: { toString(): string }; participants: { toString(): string }[] }>
+) => {
+    await conversation.populate("participants", "-password");
+    const payload = conversation.toObject();
+    const convId = conversation._id.toString();
+
+    for (const participantId of conversation.participants) {
+        const pid =
+            typeof participantId === "object" &&
+            participantId !== null &&
+            "_id" in participantId
+                ? String((participantId as { _id: unknown })._id)
+                : participantId.toString();
+
+        io.in(pid).socketsJoin(convId);
+        io.to(pid).emit("new-conversation", payload);
+    }
+};
 
 
 export const GetOrCreateConversation = async(req:Request,res:Response)=>{
     try {
         const userId = req.user?.id;
-        const {receiverId} = req.body;
+        const {receiverId} = req.body
         if(!receiverId){
             return res.status(400).json({
                 message:"Receiver Id is required",
@@ -13,6 +37,11 @@ export const GetOrCreateConversation = async(req:Request,res:Response)=>{
             })
         }
         const result = await conversationService.getOrCreatePrivateConversation(userId!,receiverId);
+
+        if (result?.isNew && result.conversation) {
+            await pushConversationToParticipants(getIO(), result.conversation);
+        }
+
         res.status(200).json({
             message:result?.isNew ? "Create conversation successfully" : "Fetch conversation successfully",
             success:true,
@@ -45,6 +74,9 @@ export const CreateGroupConversation = async(req:Request,res:Response)=>{
             groupName,
             participants
         )
+
+        await pushConversationToParticipants(getIO(), result.conversation);
+
         res.status(200).json({
             message:"Create group successfully",
             success:true,

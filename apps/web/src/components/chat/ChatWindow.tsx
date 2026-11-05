@@ -125,14 +125,16 @@ const ChatWindow = () => {
   }, [activeConversation, page, limit, dispatch]);
 
   useEffect(() => {
-    if (!activeConversation) return;
-    socket.emit("join-conversation", activeConversation._id);
-  }, [activeConversation, socket]);
+    if (!activeConversation?._id) return;
+    socket.emit("join-conversation", String(activeConversation._id));
+  }, [activeConversation?._id, socket]);
 
   useEffect(() => {
-    if (!activeConversation) return;
-    socket.emit("conversation-opened", { conversationId: activeConversation._id });
-  }, [activeConversation]);
+    if (!activeConversation?._id) return;
+    socket.emit("conversation-opened", {
+      conversationId: String(activeConversation._id),
+    });
+  }, [activeConversation?._id, socket]);
 
   if (!activeConversation) {
     return (

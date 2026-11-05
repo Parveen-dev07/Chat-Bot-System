@@ -13,6 +13,10 @@ export const removeToken = () => {
   localStorage.removeItem(TOKEN_KEY);
 };
 
+export const removeAuthUser = () => {
+  localStorage.removeItem(USER_KEY);
+};
+
 export const setAuthUser = (user: any) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 };

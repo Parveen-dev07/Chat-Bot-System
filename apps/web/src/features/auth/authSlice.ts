@@ -1,6 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { GetUsers, UserLogin } from "../../apis/auth";
-import { getToken, removeToken, setAuthUser, setToken } from "../../utils/auth";
+import {
+  getToken,
+  removeAuthUser,
+  removeToken,
+  setAuthUser,
+  setToken,
+} from "../../utils/auth";
 import type { RootState } from "../../app/store";
 import { socket } from "../../socket/socket";
 
@@ -64,9 +70,11 @@ const authSlice = createSlice({
       state.token = null;
       state.loading = false;
       state.error = null;
-      socket.disconnect()
+      socket.disconnect();
 
       removeToken();
+      removeAuthUser();
+      state.success = false;
     },
   },
 

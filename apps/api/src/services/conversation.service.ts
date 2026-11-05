@@ -75,12 +75,34 @@ export const conversationService = {
     query.type = chatType;
   }
 
-  const result = await Conversation.find(query)
+  const conversations = await Conversation.find(query)
     .populate("participants", "-password")
-    .populate("lastMessageAt")
     .sort({ updatedAt: -1 });
 
-  return result;
+  if (conversations.length === 0) {
+    return [];
+  }
+
+  const ids = conversations.map((c) => c._id);
+  const unreadRows = await Message.aggregate([
+    {
+      $match: {
+        conversation: { $in: ids },
+        sender: { $ne: userId },
+        status: { $ne: "seen" },
+      },
+    },
+    { $group: { _id: "$conversation", count: { $sum: 1 } } },
+  ]);
+
+  const unreadMap = new Map<string, number>(
+    unreadRows.map((row) => [String(row._id), row.count as number])
+  );
+
+  return conversations.map((conv) => ({
+    ...conv.toObject(),
+    unreadCount: unreadMap.get(String(conv._id)) ?? 0,
+  }));
 },
   async getConversationById(conversationId: string) {
     const messages = await Message.find({ conversation: conversationId })

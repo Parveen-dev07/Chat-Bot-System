@@ -1,7 +1,10 @@
 import { useDispatch, useSelector } from "react-redux";
 import { createOrGetConverastion, createGroupConversation } from "../../apis/chat";
 import type { AppDispatch } from "../../app/store";
-import { getChatList, setActiveConversation } from "../../features/chat/chatSlice";
+import {
+  addConversationToList,
+  setActiveConversation,
+} from "../../features/chat/chatSlice";
 import { getUsers, getUsersList } from "../../features/auth/authSlice";
 import { useEffect, useState } from "react";
 import { getAuthUser } from "../../utils/auth";
@@ -23,9 +26,10 @@ interface Props {
 const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
   const dispatch = useDispatch<AppDispatch>();
   const currentUser = getAuthUser();
-  const [chatType] = useState("");
   const [selected, setSelected] = useState<User[]>([]);
   const [groupName, setGroupName] = useState("");
+  const [groupError, setGroupError] = useState("");
+  const minOtherMembers = 2;
 
   const USERS = useSelector(getUsersList)?.filter(
     (u: User) => u._id !== currentUser?._id
@@ -43,8 +47,12 @@ const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
       }
       const response = await createOrGetConverastion(receiverId);
       if (response.success) {
-        dispatch(getChatList(chatType));
-        dispatch(setActiveConversation(response?.result?.conversation));
+        const conv =
+          response?.result?.conversation ?? response?.result;
+        if (conv) {
+          dispatch(addConversationToList(conv));
+          dispatch(setActiveConversation(conv));
+        }
         onClose();
       }
     } catch (error: any) {
@@ -53,25 +61,42 @@ const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
   };
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || selected.length === 0) return;
+    if (!groupName.trim() || selected.length < minOtherMembers) return;
+    setGroupError("");
     try {
       const response = await createGroupConversation({
         groupName: groupName.trim(),
         participants: selected.map((u) => u._id),
       });
       if (response.success) {
-        dispatch(getChatList(chatType));
-        dispatch(setActiveConversation(response?.data?.conversation));
+        const conv = response?.data?.conversation;
+        if (conv) {
+          dispatch(addConversationToList(conv));
+          dispatch(setActiveConversation(conv));
+        }
         setSelected([]);
         setGroupName("");
+        setGroupError("");
         onClose();
+      } else {
+        setGroupError(
+          response.error ||
+            response.message ||
+            "Could not create group. Try again."
+        );
       }
     } catch (error: any) {
-      throw new Error(error?.response.data.message);
+      const data = error?.response?.data;
+      setGroupError(
+        data?.error ||
+          data?.message ||
+          "Could not create group. Try again."
+      );
     }
   };
 
   const toggleUser = (user: User) => {
+    setGroupError("");
     setSelected((prev) =>
       prev.find((u) => u._id === user._id)
         ? prev.filter((u) => u._id !== user._id)
@@ -80,7 +105,10 @@ const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
   };
 
   useEffect(() => {
-    if (isOpen) fetchUsers();
+    if (isOpen) {
+      fetchUsers();
+      setGroupError("");
+    }
   }, [dispatch, isOpen]);
 
   if (!isOpen) return null;
@@ -103,8 +131,20 @@ const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
               className="user-modal-group-input"
               placeholder="Group name"
               value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
+              onChange={(e) => {
+                setGroupName(e.target.value);
+                setGroupError("");
+              }}
             />
+            <p className="user-modal-hint">
+              Select at least {minOtherMembers} other members (3 people total
+              including you).
+            </p>
+            {groupError && (
+              <p className="user-modal-error" role="alert">
+                {groupError}
+              </p>
+            )}
           </div>
         )}
 
@@ -143,11 +183,18 @@ const UserList = ({ isOpen, onClose, createType = "private" }: Props) => {
 
         {createType === "group" && (
           <div className="user-modal-footer">
-            <span className="user-modal-count">{selected.length} selected</span>
+            <span className="user-modal-count">
+              {selected.length} selected
+              {selected.length > 0 && selected.length < minOtherMembers
+                ? ` · need ${minOtherMembers - selected.length} more`
+                : ""}
+            </span>
             <button
               type="button"
               className="user-modal-create"
-              disabled={selected.length === 0 || !groupName.trim()}
+              disabled={
+                selected.length < minOtherMembers || !groupName.trim()
+              }
               onClick={handleCreateGroup}
             >
               Create group

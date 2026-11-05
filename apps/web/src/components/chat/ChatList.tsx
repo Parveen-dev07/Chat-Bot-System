@@ -6,6 +6,7 @@ import {
   getChatLoading,
   setActiveConversation,
   getActiveConversation,
+  getUnreadCounts,
 } from "../../features/chat/chatSlice";
 import type { AppDispatch } from "../../app/store";
 import { getAuthUser } from "../../utils/auth";
@@ -17,6 +18,7 @@ const ChatList = () => {
   const chatList = useSelector(getChatListState);
   const loading = useSelector(getChatLoading);
   const activeConversation = useSelector(getActiveConversation);
+  const unreadCounts = useSelector(getUnreadCounts);
   const currentUser = getAuthUser();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -114,6 +116,7 @@ const ChatList = () => {
       <div className="chat-list__scroll">
         {chatList.map((conv: any) => {
           const isActive = activeConversation?._id === conv._id;
+          const unread = unreadCounts[String(conv._id)] ?? 0;
           return (
             <button
               type="button"
@@ -128,6 +131,11 @@ const ChatList = () => {
                   {conv.lastMessage?.content ?? "No messages yet"}
                 </span>
               </div>
+              {unread > 0 && !isActive && (
+                <span className="chat-list__unread" aria-label={`${unread} unread`}>
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
             </button>
           );
         })}
