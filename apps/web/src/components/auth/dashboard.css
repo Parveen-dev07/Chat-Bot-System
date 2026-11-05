@@ -1,0 +1,28 @@
+.dash-layout {
+  display: flex;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg-subtle);
+  width: 100%;
+}
+
+.dash-chat-panel {
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dash-chat-panel--open {
+  width: 300px;
+}
+
+@media (max-width: 768px) {
+  .dash-chat-panel--open {
+    width: min(300px, 85vw);
+    position: absolute;
+    z-index: 20;
+    height: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+}
