@@ -1,0 +1,96 @@
+
+# ===== PART 1: PersistentVolumeClaim (PVC) =====
+# A PVC is a request for storage. It is the Kubernetes version of
+# the Docker volume "mongo_data" in your compose file.
+
+
+# apiVersion =  which kubernetes API version defines this object type
+apiVersion: v1
+
+# kind = what type of object we are creating 
+kind: PersistentVolumeClaim
+
+# metadata = information about this object 
+metadata:
+
+# name = name of the PVC(you choose it, the Deployement below uses it)
+  name: mongo-pvc
+
+# spec = what we want 
+spec:
+ 
+#  accessModes = who can use this storage 
+   accessModes:
+    # ReadWriteOnce = one node can read and write at a time
+     - ReadWriteOnce
+
+
+  #  resources = how much storage we ask for 
+   resources:
+     requests:
+       1Gi = 1 gigabyte of space for mongoDB data
+       storage:1Gi
+
+
+
+# ===== PART 2: Deployment =====
+# A Deployment runs your container and keeps it alive.
+# If the pod crashes, Kubernetes starts a new one automatically.
+# (This replaces "restart: unless-stopped" and "image: mongo:7" from compose.)
+
+
+
+apiVersion: apps/v1
+kind: Deployement
+metadata:
+
+# name of the Deployement, used in command like: kubectl ogs deploye/mongo 
+  name: mongo 
+
+spec:
+  # replicas = how many copies(pods) to run. 1 is right for a single database
+  replicas: 1
+
+  # selector = tells the Deployement which pods belong to it 
+  selector:
+    matchLables:
+      app: mongo
+
+
+  # template = the blueprint of each pod 
+  template:
+    metadata:
+      lables:
+        app: mongo
+
+    spec:
+
+      # container = list of container inside the pod
+      containers:
+        - name: mongo
+          
+          # image= ready-made image from Docker Hub(Same as compose)
+          image: mongo:7
+
+          # ports =  ports the app listens on inside the container
+          ports:
+
+            - containerPort: 27017
+
+          # volumeMountes= where to attach the storage inside the container
+          volumeMounts:
+           
+          #  name must match the name in volumes below
+            - name: mongo-storage
+            # /data/db = folder where mongoDB writes its data files
+              mountPath: /data/db
+
+      # volumes =  storage sources available to this pod 
+
+
+
+
+  
+
+
+
