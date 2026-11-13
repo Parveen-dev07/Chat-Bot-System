@@ -1,0 +1,127 @@
+services:
+   
+# api = our backend service name 
+  api:
+
+
+    #  build = Tells Docker compose to build an image for this service using a dockerfile.
+    build:
+
+       
+      #  context = the directory whose files Docker can access during the image build 
+      context: .
+
+      #  dockerfile = specifies which dockerfile to use for building this backend images 
+      dockerfile : docker/api.Dockerfile
+      
+
+
+      # conatiner_name = Assign a custom name to the create backend container 
+    container_name: chat-api
+
+      # port = connects a port on your computer to a port inside the container 
+    ports:
+      
+      # format: "HOST_PORT : CONTAINER_POST"
+      # first 5000 = Your computer's port.
+      # second 5000 = Created backend container port.
+        - "5000:5000"
+
+
+      #  env_file = read environment varibles from the specified .env file and passes then to the backend container
+    env_file:
+        - ./apps/api/.env
+
+      # environment = defines environment varibles directly from this container.
+
+    environment:
+          # your application can read this using process.env.DOCKER 
+         - DOCKER=true
+         - DOCKER_MONGODB_URI=mongodb://mongo:27017/chat-application
+
+    depends_on:
+      - mongo
+
+
+  web:
+
+    build:
+
+      context: .
+
+      dockerfile : docker/web.Dockerfile
+
+    container_name : chat-web
+
+    ports:
+      - "5173:5173"
+
+
+    depends_on:
+
+      - api
+
+
+    env_file:
+      - ./apps/web/.env
+
+
+    environment:
+
+      - DOCKER=true
+      
+
+  mongo:
+    
+    image: mongo:7
+    
+    container_name: chat-mongo
+
+    restart: unless-stopped
+
+    
+#     volumes:
+#       - mongo_data:/data/db
+
+
+
+# volumes:
+#   mongo_data:      
+
+
+
+# after complete this pipline run these commands:
+# 1.docker compose config = for check config output
+# docker compose up --build      # build images and start (use after changing code or Dockerfile)
+
+
+# docker compose up              # start without rebuilding (uses existing images)
+# docker compose up -d           # run in the background
+# docker compose logs -f         # watch logs
+# docker compose ps              # see running containers
+# docker compose down            # stop and remove containers
+
+
+
+# docker compose ps
+
+
+# volume related commands 
+
+
+# Check whether volume exists
+# docker volume ls
+# docker inspect chat-mongo -f '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
+
+# for see old volume data:
+# 1.docker exec tmp-mongo mongosh --quiet --eval "db.adminCommand('listDatabases')"
+# 2.docker run -d --name tmp-mongo -v chat-bot-system_mongo_data:/data/db mongo:7
+# 3.docker exec tmp-mongo mongosh chat-application --quiet --eval "db.getCollectionNames()"
+# 4.docker exec tmp-mongo mongosh chat-application --quiet --eval "db.users.find().pretty()"
+
+
+# Remove temporary container
+# 5.docker rm -f tmp-mongo
+
+# Permanently delete old volume
+# 6.docker volume rm chat-bot-system_mongo_data
